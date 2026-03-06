@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendor CSV Filter UI</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #d9e2ec;
+      --brand: #0b5fff;
+      --chip: #e9f0ff;
+      --accent: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at 10% 0%, #e7eefb 0%, var(--bg) 48%, #edf5ff 100%);
+      color: var(--ink);
+    }
+    .wrap {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    }
+    .controls {
+      padding: 14px;
+      position: sticky;
+      top: 12px;
+      height: calc(100vh - 24px);
+      overflow: auto;
+    }
+    .title {
+      margin: 0 0 6px;
+      font-size: 1.15rem;
+    }
+    .hint {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .row { margin-bottom: 12px; }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.86rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    input[type="file"], input[type="text"], input[type="number"], select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      background: #fff;
+    }
+    select[multiple] {
+      min-height: 110px;
+    }
+    .inline {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 8px 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--brand);
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #e7edf7;
+      color: #0f172a;
+    }
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .pill {
+      border-radius: 999px;
+      background: var(--chip);
+      color: #16316d;
+      padding: 4px 10px;
+      font-size: 0.82rem;
+      border: 1px solid #ceddff;
+    }
+    .table-wrap {
+      padding: 14px;
+      overflow: auto;
+      max-height: calc(100vh - 58px);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      min-width: 840px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      padding: 7px 8px;
+      vertical-align: top;
+    }
+    th {
+      background: #f8fbff;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .adv-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .adv-rule {
+      border: 1px dashed #cfd8e6;
+      border-radius: 10px;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #fbfdff;
+    }
+    .adv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .status {
+      margin: 8px 0 0;
+      font-size: 0.83rem;
+      color: #854d0e;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: none;
+    }
+    .tick-list {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px;
+      max-height: 136px;
+      overflow: auto;
+      display: grid;
+      gap: 6px;
+    }
+    .tick-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.86rem;
+      color: #1f2937;
+    }
+    .tick-item input {
+      margin: 0;
+      accent-color: var(--brand);
+    }
+    @media (max-width: 980px) {
+      .wrap {
+        grid-template-columns: 1fr;
+      }
+      .controls {
+        height: auto;
+        position: relative;
+        top: 0;
+      }
+      .table-wrap {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="card controls">
+      <h1 class="title">Vendor CSV Filter</h1>
+      <p class="hint">Upload CSV and filter by state, organizations, org count, category, email, and custom column rules.</p>
+
+      <div class="row">
+        <label for="csvFile">CSV File</label>
+        <input id="csvFile" type="file" accept=".csv,text/csv" />
+      </div>
+
+      <div class="row">
+        <label for="searchText">Search (any column)</label>
+        <input id="searchText" type="text" placeholder="e.g. Atlanta or embroidery" />
+      </div>
+
+      <div class="row">
+        <label>State (tick to include)</label>
+        <div id="stateTicks" class="tick-list"></div>
+      </div>
+
+      <div class="row">
+        <label>Category (tick to include)</label>
+        <div id="categoryTicks" class="tick-list"></div>
+      </div>
+
+      <div class="row">
+        <label>Divine 9 Organizations (tick to include)</label>
+        <div id="divine9Ticks" class="tick-list"></div>
+      </div>
+
+      <div class="row">
+        <label>All Organizations (tick to include)</label>
+        <div id="orgTicks" class="tick-list"></div>
+      </div>
+
+      <div class="row">
+        <label>Organization Count Range</label>
+        <div class="inline">
+          <input id="orgMin" type="number" min="0" placeholder="Min" />
+          <input id="orgMax" type="number" min="0" placeholder="Max" />
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="emailOnly">Email Requirement</label>
+        <select id="emailOnly">
+          <option value="any">Any</option>
+          <option value="has">Has Email</option>
+          <option value="missing">Missing Email</option>
+        </select>
+      </div>
+
+      <div class="adv-head">
+        <label style="margin:0;">Advanced Filters</label>
+        <button id="addRule" class="btn-secondary" type="button">+ Add Rule</button>
+      </div>
+      <div id="advancedRules" class="row"></div>
+
+      <div class="btns">
+        <button id="applyBtn" class="btn-primary" type="button">Apply Filters</button>
+        <button id="resetBtn" class="btn-secondary" type="button">Reset</button>
+        <button id="downloadBtn" class="btn-secondary" type="button">Download Filtered CSV</button>
+      </div>
+      <div id="status" class="status"></div>
+    </aside>
+
+    <main class="card table-wrap">
+      <div class="stats">
+        <span class="pill" id="totalRows">Total: 0</span>
+        <span class="pill" id="filteredRows">Filtered: 0</span>
+        <span class="pill" id="totalColumns">Columns: 0</span>
+      </div>
+      <table id="resultTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      rows: [],
+      filtered: [],
+      headers: [],
+      advancedRules: [],
+      derivedOrgCountColumn: "__org_count__",
+      searchAttempts: {}
+    };
+
+    const csvFile = document.getElementById("csvFile");
+    const stateTicks = document.getElementById("stateTicks");
+    const categoryTicks = document.getElementById("categoryTicks");
+    const divine9Ticks = document.getElementById("divine9Ticks");
+    const orgTicks = document.getElementById("orgTicks");
+    const orgMin = document.getElementById("orgMin");
+    const orgMax = document.getElementById("orgMax");
+    const emailOnly = document.getElementById("emailOnly");
+    const searchText = document.getElementById("searchText");
+    const statusBox = document.getElementById("status");
+    const advancedRules = document.getElementById("advancedRules");
+
+    const totalRows = document.getElementById("totalRows");
+    const filteredRows = document.getElementById("filteredRows");
+    const totalColumns = document.getElementById("totalColumns");
+    const DIVINE9 = [
+      "Alpha Phi Alpha",
+      "Alpha Kappa Alpha",
+      "Kappa Alpha Psi",
+      "Omega Psi Phi",
+      "Delta Sigma Theta",
+      "Phi Beta Sigma",
+      "Zeta Phi Beta",
+      "Sigma Gamma Rho",
+      "Iota Phi Theta"
+    ];
+
+    csvFile.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const parsed = parseCSV(text);
+      if (!parsed.length) {
+        showStatus("No rows found in the uploaded CSV.");
+        return;
+      }
+      state.headers = parsed[0].map(h => h.trim());
+      state.rows = parsed.slice(1)
+        .filter(r => r.some(c => (c || "").trim() !== ""))
+        .map(r => rowFromArray(state.headers, r));
+      addDerivedColumns();
+      state.filtered = [...state.rows];
+      state.advancedRules = [];
+      renderAdvancedRules();
+      populateStaticFilters();
+      applyFilters();
+      hideStatus();
+    });
+
+    document.getElementById("addRule").addEventListener("click", () => {
+      state.advancedRules.push({ column: "", operator: "contains", value: "" });
+      renderAdvancedRules();
+    });
+    document.getElementById("applyBtn").addEventListener("click", applyFilters);
+    document.getElementById("resetBtn").addEventListener("click", resetFilters);
+    document.getElementById("downloadBtn").addEventListener("click", downloadCSV);
+    searchText.addEventListener("input", applyFilters);
+    orgMin.addEventListener("input", applyFilters);
+    orgMax.addEventListener("input", applyFilters);
+    emailOnly.addEventListener("change", applyFilters);
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+        if (ch === '"' && inQuotes && next === '"') {
+          field += '"';
+          i++;
+          continue;
+        }
+        if (ch === '"') {
+          inQuotes = !inQuotes;
+          continue;
+        }
+        if (ch === "," && !inQuotes) {
+          row.push(field);
+          field = "";
+          continue;
+        }
+        if ((ch === "\n" || ch === "\r") && !inQuotes) {
+          if (ch === "\r" && next === "\n") i++;
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+          continue;
+        }
+        field += ch;
+      }
+      if (field.length || row.length) {
+        row.push(field);
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function rowFromArray(headers, values) {
+      const obj = {};
+      for (let i = 0; i < headers.length; i++) obj[headers[i]] = (values[i] || "").trim();
+      return obj;
+    }
+
+    function addDerivedColumns() {
+      const hasOrgCount = state.headers.includes("RegisteredOrgCount");
+      if (!state.headers.includes(state.derivedOrgCountColumn)) {
+        state.headers.push(state.derivedOrgCountColumn);
+      }
+      state.rows.forEach(r => {
+        if (hasOrgCount && toNumber(r.RegisteredOrgCount) !== null) {
+          r[state.derivedOrgCountColumn] = String(toNumber(r.RegisteredOrgCount));
+          return;
+        }
+        const orgRaw = (r.Organization || "").trim();
+        if (!orgRaw) {
+          r[state.derivedOrgCountColumn] = "0";
+          return;
+        }
+        const unique = new Set(
+          orgRaw.split(",").map(s => s.trim()).filter(Boolean)
+        );
+        r[state.derivedOrgCountColumn] = String(unique.size);
+      });
+    }
+
+    function populateStaticFilters() {
+      fillCheckboxGroup(stateTicks, uniqueValues("State"), "state");
+      fillCheckboxGroup(categoryTicks, uniqueValues("Category"), "category");
+      fillCheckboxGroup(divine9Ticks, DIVINE9, "d9");
+      const orgSet = new Set();
+      state.rows.forEach(r => {
+        (r.Organization || "").split(",").forEach(org => {
+          const clean = org.trim();
+          if (clean) orgSet.add(clean);
+        });
+      });
+      fillCheckboxGroup(orgTicks, [...orgSet].sort((a, b) => a.localeCompare(b)), "org");
+    }
+
+    function fillCheckboxGroup(el, values, namePrefix) {
+      el.innerHTML = "";
+      values.forEach((v, i) => {
+        const id = `${namePrefix}_${i}`;
+        const label = document.createElement("label");
+        label.className = "tick-item";
+        label.setAttribute("for", id);
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.id = id;
+        input.value = v;
+        input.addEventListener("change", applyFilters);
+        const text = document.createElement("span");
+        text.textContent = v;
+        label.appendChild(input);
+        label.appendChild(text);
+        el.appendChild(label);
+      });
+    }
+
+    function uniqueValues(column) {
+      const vals = new Set();
+      state.rows.forEach(r => {
+        const val = (r[column] || "").trim();
+        if (val) vals.add(val);
+      });
+      return [...vals].sort((a, b) => a.localeCompare(b));
+    }
+
+    function selectedTicks(container) {
+      const checked = container.querySelectorAll("input[type='checkbox']:checked");
+      return new Set([...checked].map(i => i.value));
+    }
+
+    function applyFilters() {
+      if (!state.rows.length) {
+        showStatus("Upload a CSV first.");
+        return;
+      }
+      const selectedStates = selectedTicks(stateTicks);
+      const selectedCategories = selectedTicks(categoryTicks);
+      const selectedDivine9 = selectedTicks(divine9Ticks);
+      const selectedOrgs = selectedTicks(orgTicks);
+      const emailMode = emailOnly.value;
+      const query = searchText.value.trim().toLowerCase();
+      const minCount = toNumber(orgMin.value);
+      const maxCount = toNumber(orgMax.value);
+      const rules = getAdvancedRules();
+
+      state.filtered = state.rows.filter(row => {
+        const stateOk = !selectedStates.size || selectedStates.has((row.State || "").trim());
+        if (!stateOk) return false;
+
+        const categoryOk = !selectedCategories.size || selectedCategories.has((row.Category || "").trim());
+        if (!categoryOk) return false;
+
+        const orgs = new Set((row.Organization || "").split(",").map(v => v.trim()).filter(Boolean));
+
+        if (selectedDivine9.size) {
+          let d9Match = false;
+          selectedDivine9.forEach(org => { if (orgs.has(org)) d9Match = true; });
+          if (!d9Match) return false;
+        }
+
+        if (selectedOrgs.size) {
+          let anyMatch = false;
+          selectedOrgs.forEach(org => { if (orgs.has(org)) anyMatch = true; });
+          if (!anyMatch) return false;
+        }
+
+        const orgCount = toNumber(row[state.derivedOrgCountColumn]) || 0;
+        if (minCount !== null && orgCount < minCount) return false;
+        if (maxCount !== null && orgCount > maxCount) return false;
+
+        const email = (row.Email || "").trim();
+        if (emailMode === "has" && !email) return false;
+        if (emailMode === "missing" && email) return false;
+
+        if (query) {
+          const text = Object.values(row).join(" ").toLowerCase();
+          if (!text.includes(query)) return false;
+        }
+
+        for (const rule of rules) {
+          if (!runRule(row, rule)) return false;
+        }
+        return true;
+      });
+
+      renderTable();
+      refreshStats();
+      hideStatus();
+    }
+
+    function runRule(row, rule) {
+      const raw = String(row[rule.column] || "");
+      const left = raw.toLowerCase();
+      const right = (rule.value || "").toLowerCase();
+      if (rule.operator === "contains") return left.includes(right);
+      if (rule.operator === "equals") return left === right;
+      if (rule.operator === "not_equals") return left !== right;
+      if (rule.operator === "starts_with") return left.startsWith(right);
+      if (rule.operator === "ends_with") return left.endsWith(right);
+      if (rule.operator === "is_empty") return left.trim() === "";
+      if (rule.operator === "not_empty") return left.trim() !== "";
+      return true;
+    }
+
+    function getAdvancedRules() {
+      const rules = [];
+      const nodes = [...advancedRules.querySelectorAll(".adv-rule")];
+      nodes.forEach(node => {
+        const column = node.querySelector(".col").value;
+        const operator = node.querySelector(".op").value;
+        const value = node.querySelector(".val").value || "";
+        if (!column) return;
+        if ((operator === "is_empty" || operator === "not_empty")) {
+          rules.push({ column, operator, value: "" });
+          return;
+        }
+        if (!value.trim()) return;
+        rules.push({ column, operator, value });
+      });
+      return rules;
+    }
+
+    function renderAdvancedRules() {
+      advancedRules.innerHTML = "";
+      state.advancedRules.forEach((rule, idx) => {
+        const div = document.createElement("div");
+        div.className = "adv-rule";
+        div.innerHTML = `
+          <div class="adv-grid">
+            <select class="col"></select>
+            <select class="op">
+              <option value="contains">contains</option>
+              <option value="equals">equals</option>
+              <option value="not_equals">not equals</option>
+              <option value="starts_with">starts with</option>
+              <option value="ends_with">ends with</option>
+              <option value="is_empty">is empty</option>
+              <option value="not_empty">not empty</option>
+            </select>
+            <input class="val" type="text" placeholder="value" />
+            <button type="button" class="btn-danger rm">Remove</button>
+          </div>
+        `;
+        const col = div.querySelector(".col");
+        const headers = state.headers.filter(h => h !== state.derivedOrgCountColumn);
+        headers.forEach(h => {
+          const o = document.createElement("option");
+          o.value = h;
+          o.textContent = h;
+          col.appendChild(o);
+        });
+        col.value = rule.column || "";
+        div.querySelector(".op").value = rule.operator || "contains";
+        div.querySelector(".val").value = rule.value || "";
+        div.querySelector(".rm").addEventListener("click", () => {
+          state.advancedRules.splice(idx, 1);
+          renderAdvancedRules();
+        });
+        advancedRules.appendChild(div);
+      });
+    }
+
+    function renderTable() {
+      const table = document.getElementById("resultTable");
+      const thead = table.querySelector("thead");
+      const tbody = table.querySelector("tbody");
+      const headers = state.headers.filter(h => h !== state.derivedOrgCountColumn);
+
+      thead.innerHTML = "<tr>" + headers.concat("DerivedOrgCount", "Action").map(h => `<th>${escapeHtml(h)}</th>`).join("") + "</tr>";
+      const rows = state.filtered.slice(0, 2000);
+      tbody.innerHTML = rows.map((r, idx) => {
+        const cells = headers.map(h => `<td>${escapeHtml(r[h] || "")}</td>`);
+        cells.push(`<td>${escapeHtml(r[state.derivedOrgCountColumn] || "0")}</td>`);
+        cells.push(`<td><button type="button" class="btn-secondary search-btn" data-row-index="${idx}">Search Owner + Instagram</button></td>`);
+        return "<tr>" + cells.join("") + "</tr>";
+      }).join("");
+
+      tbody.querySelectorAll(".search-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.dataset.rowIndex);
+          const row = rows[idx];
+          if (!row) return;
+          const key = `${row.Vendor || ""}__${row.Email || ""}__${row.Organization || ""}`;
+          const attempt = (state.searchAttempts[key] || 0) + 1;
+          state.searchAttempts[key] = attempt;
+          const query = attempt === 1 ? buildPrimarySearchQuery(row) : buildFallbackSearchQuery(row);
+          openGoogleSearch(query);
+          if (attempt === 1) {
+            btn.textContent = "Retry Optimized Search";
+          }
+        });
+      });
+    }
+
+    function refreshStats() {
+      totalRows.textContent = `Total: ${state.rows.length}`;
+      filteredRows.textContent = `Filtered: ${state.filtered.length}`;
+      totalColumns.textContent = `Columns: ${state.headers.filter(h => h !== state.derivedOrgCountColumn).length}`;
+    }
+
+    function resetFilters() {
+      [stateTicks, categoryTicks, divine9Ticks, orgTicks].forEach(container => {
+        container.querySelectorAll("input[type='checkbox']").forEach(cb => cb.checked = false);
+      });
+      orgMin.value = "";
+      orgMax.value = "";
+      emailOnly.value = "any";
+      searchText.value = "";
+      state.advancedRules = [];
+      renderAdvancedRules();
+      applyFilters();
+    }
+
+    function downloadCSV() {
+      if (!state.filtered.length) {
+        showStatus("No filtered rows to download.");
+        return;
+      }
+      const headers = state.headers.filter(h => h !== state.derivedOrgCountColumn);
+      const outputHeaders = [...headers, "DerivedOrgCount"];
+      const lines = [outputHeaders.map(escapeCsv).join(",")];
+      state.filtered.forEach(r => {
+        const row = headers.map(h => escapeCsv(r[h] || ""));
+        row.push(escapeCsv(r[state.derivedOrgCountColumn] || "0"));
+        lines.push(row.join(","));
+      });
+      const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "filtered_vendors.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      hideStatus();
+    }
+
+    function toNumber(v) {
+      if (v === null || v === undefined || v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function showStatus(msg) {
+      statusBox.textContent = msg;
+      statusBox.style.display = "block";
+    }
+    function hideStatus() {
+      statusBox.style.display = "none";
+    }
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+    function escapeCsv(value) {
+      const s = String(value);
+      if (/[",\n\r]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
+      return s;
+    }
+    function openGoogleSearch(query) {
+      const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+    function buildPrimarySearchQuery(row) {
+      const vendor = (row.Vendor || "").trim();
+      const orgs = (row.Organization || "").trim();
+      return `Who owns "${vendor}" and what is their official Instagram handle? Licensed organizations: ${orgs}. Return owner full name and Instagram username.`;
+    }
+    function buildFallbackSearchQuery(row) {
+      const vendor = (row.Vendor || "").trim();
+      const orgs = (row.Organization || "").trim();
+      const firstOrg = orgs.split(",").map(v => v.trim()).filter(Boolean)[0] || "";
+      return `"${vendor}" owner OR founder ${firstOrg} instagram OR "IG" site:instagram.com`;
+    }
+  </script>
+</body>
+</html>
